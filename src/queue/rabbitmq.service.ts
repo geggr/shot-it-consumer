@@ -13,41 +13,36 @@ type RabbitMQMessage = {
 }
 
 export class RabbitMQService {
-    #connection: amqp.Connection
     #channel: amqp.Channel
 
-    async #connect() {
-        this.#connection = await amqp.connect("amqp://localhost")
-        this.#channel = await this.#connection.createChannel()
+    constructor(channel: amqp.Channel) {
+        this.#channel = channel;
     }
 
     async createQueueWithBinding({ queue, exchange, routing }: RabbitMQQueueSetup) {
-        await this.#channel.assertExchange(exchange, 'direct', { durable: true })
-        await this.#channel.assertQueue(queue, { durable: true })
-        await this.#channel.bindQueue(queue, exchange, routing)
-    }
-
-    async setup() {
-        await this.#connect()
+        await this.#channel.assertExchange(exchange, 'direct', { durable: true });
+        await this.#channel.assertQueue(queue, { durable: true });
+        await this.#channel.bindQueue(queue, exchange, routing);
     }
 
     async send({ exchange, routing_key, message }: RabbitMQMessage) {
-        const buffer = Buffer.from(JSON.stringify(message))
-        this.#channel.publish(exchange, routing_key, buffer)
+        const buffer = Buffer.from(JSON.stringify(message));
+        this.#channel.publish(exchange, routing_key, buffer);
     }
 
     async listen<T>(queue: string, consumer: (data: T) => void) {
         this.#channel.consume(queue, (message) => {
-            if (message === null) return
-
+            if (message === null) return;
             try {
-                const content = message.content.toString()
-                consumer(JSON.parse(content))
-                this.#channel.ack(message)
+                console.log(message)
+                const content = message.content.toString();
+                consumer(JSON.parse(content));
+            } catch (error) {
+                console.log(error);
             }
-            catch (error) {
-                console.log(error)
+            finally {
+                this.#channel.ack(message);
             }
-        })
+        });
     }
 }

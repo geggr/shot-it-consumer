@@ -7,11 +7,15 @@ import { Thumbnail } from '../processor/video.processor';
 
 
 const S3LocalConfiguration = {
+    client: new S3Client({
+        endpoint: "http://localhost:4566",
+        forcePathStyle: true,
+        credentials: {
+            accessKeyId: "local",
+            secretAccessKey: "stack",
+        }
+    }),
     endpoint: "http://localhost:4566",
-    credentials: {
-        accessKeyId: "local",
-        secretAccessKey: "stack",
-    },
     bucket: "shotit"
 }
 
@@ -20,13 +24,9 @@ export class S3StorageService implements StorageService {
     #client: S3Client;
     #bucket: string;
 
-    constructor({ endpoint, credentials, bucket } = S3LocalConfiguration) {
+    constructor({ endpoint, client, bucket } = S3LocalConfiguration) {
         this.#endpoint = endpoint
-        this.#client = new S3Client({
-            endpoint,
-            forcePathStyle: true,
-            credentials
-        })
+        this.#client = client
         this.#bucket = bucket
     }
 

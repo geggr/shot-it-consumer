@@ -8,8 +8,8 @@ type VideoUploadedMessage = {
 }
 
 export class VideoController {
-    #rabbit: RabbitMQService = new RabbitMQService()
-    #thumbnailService: ThumbnailService = new ThumbnailService()
+    #queue: RabbitMQService;
+    #thumbnailService: ThumbnailService
 
     static QUEUE_CONFIGURATION = {
         EXCHANGE_NAME: "video.event",
@@ -19,13 +19,18 @@ export class VideoController {
         THUMBNAIL_ROUTING_KEY: "thumbnail.generated",
     }
 
+    constructor(queue: RabbitMQService, thumbnailService: ThumbnailService) {
+        this.#queue = queue
+        this.#thumbnailService = thumbnailService
+    }
+
     async handleProcessThumbnails(video_id: number, key: string) {
         const thumbnails = await this.#thumbnailService.process(key)
-        this.handleSendThumbnails(video_id, thumbnails)
+        this.handleSendThumbnails(video_id, thumbnails).catch(console.error)
     }
 
     async handleSendThumbnails(video_id: number, thumbnails: string[]) {
-        this.#rabbit.send({
+        this.#queue.send({
             exchange: VideoController.QUEUE_CONFIGURATION.EXCHANGE_NAME,
             routing_key: VideoController.QUEUE_CONFIGURATION.THUMBNAIL_ROUTING_KEY,
             message: {
@@ -36,12 +41,11 @@ export class VideoController {
     }
 
     async listenToQueue() {
-        await this.#rabbit.setup()
-
-        this.#rabbit.listen<VideoUploadedMessage>(
+        this.#queue.listen<VideoUploadedMessage>(
             VideoController.QUEUE_CONFIGURATION.UPLOAD_QUEUE,
             async ({ id, url }) => await this.handleProcessThumbnails(id, url)
         )
+        .catch(console.error)
     }
 
 }
