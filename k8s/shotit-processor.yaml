@@ -1,0 +1,27 @@
+# Deploy da aplicação Node processadora de vídeos
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shotit-processor
+  namespace: shotit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shotit-processor
+  template:
+    metadata:
+      labels:
+        app: shotit-processor
+    spec:
+      containers:
+        - name: shotit-processor
+          image: shotit-processor:latest
+          imagePullPolicy: Never
+          envFrom:
+            - secretRef:
+                name: shotit-processor-secrets
+          resources:
+            requests:
+              cpu: 200m
+              memory: 200M

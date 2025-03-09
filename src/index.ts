@@ -6,12 +6,16 @@ import amqp from "amqplib";
 import {RabbitMQService} from "./queue/rabbitmq.service";
 
 async function main() {
+    const {
+        NODE_QUEUE_HOST
+    } = process.env;
+
     const service = new ThumbnailService(
         new S3StorageService(),
         new FFmpegProcessor()
     )
 
-    const rabbit = await amqp.connect("amqp://localhost")
+    const rabbit = await amqp.connect(`amqp://${NODE_QUEUE_HOST ?? 'localhost'}`)
 
     const channel = await rabbit.createChannel()
 
